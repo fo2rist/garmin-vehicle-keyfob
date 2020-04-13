@@ -10,7 +10,6 @@ using Toybox.StringUtil;
 using Toybox.WatchUi;
 
 const OAUTH_REDIRECT_URI = "https://localhost";
-const CLIENT_ID = "3657eda5-fb34-489c-93f9-9e1357bea1e4";
 
 const ACCESS_TOKEN_KEY = "access_token";
 const REFRESH_TOKEN_KEY = "refresh_token";
@@ -28,11 +27,16 @@ class NumberPickerApp extends Application.AppBase {
 
     // onStart() is called on application start up
     function onStart(state) {
-        // register a callback to capture results from OAuth requests
-        Communications.registerForOAuthMessages(method(:onOAuthMessage));
-        System.println("It's registered");
-        getOAuthToken();
-        System.println("Started fetching");
+        //check if creds are already present
+        //if yes check if needed to refresh the token and refresh
+        //get cars list
+        //get car name
+        //display list of car
+        //or show the controls if there is only one
+
+        // Here tell user that we need to authenticate on device
+        // WatchUi.requestUpdate();
+        initiateOAuth();
     }
 
     // onStop() is called when your application is exiting
@@ -44,81 +48,77 @@ class NumberPickerApp extends Application.AppBase {
         return [ new NumberPickerView(), new BaseInputDelegate() ];
     }
 
-    // wrap the OAuth request in a function
-    function getOAuthToken() {
-        var status = "Look at OAuth screen\n";
-        WatchUi.requestUpdate();
-
-        // set the makeOAuthRequest parameters
+    function initiateOAuth() {
+        // register a callback to capture results from OAuth requests
+        Communications.registerForOAuthMessages(method(:onOAuthMessage));
         var params = {
-            "scope" => Communications.encodeURL("control_security"),
+            "scope" => Communications.encodeURL("required:control_security required:read_vehicle_info read_location"),
             "redirect_uri" => $.OAUTH_REDIRECT_URI,
             "response_type" => "code",
-            "client_id" => $.CLIENT_ID
+            "client_id" => $.CLIENT_ID,
+            "approval_prompt" => "force",
+            "single_select" => "true",
+            "mode" => "test"
         };
 
-        // makeOAuthRequest triggers login prompt on mobile device.
-        // "responseCode" and "responseError" are the parameters passed
-        // to the resultUrl. Check the oauth provider's documentation
-        // to determine the correct strings to use.
+        System.println("Initiate OAuth");
         Communications.makeOAuthRequest(
             "https://connect.smartcar.com/oauth/authorize",
             params,
             "https://connect.smartcar.com/oauth/authorize",
             Communications.OAUTH_RESULT_TYPE_URL,
-            {$.RESPOSE_CODE_KEY => "responseCode", $.ERROR_KEY => "responseError"}
+            {$.RESPOSE_CODE_KEY => $.RESPOSE_CODE_KEY, $.ERROR_KEY => $.ERROR_KEY}
         );
     }
 
-    // implement the OAuth callback method
     function onOAuthMessage(message) {
         if (message.data == null) {
-            System.println("Failed");
+            System.println("OAuth Failed");
             return;
         }
         var error = message.data[$.ERROR_KEY];
         if (error != null) {
-            System.print("Error " + error);
+            System.println("OAuth Error: " + error);
+            return;
+        }
+        if (message.data.isEmpty()) {
+            System.println("OAuth Empty response");
             return;
         }
 
-        System.println("Got response");
-        System.println(message.data);
+        System.println("OAuth Response: " + message.data);
         var code = message.data[$.RESPOSE_CODE_KEY];
-        System.print("Code " + code);
-        makeRequest(code);
+        makeTokenRequest(code);
     }
 
-    function makeRequest(code) {
-        var params = {                                              // set the parameters
+    function makeTokenRequest(code) {
+        var options = {
+            :method => Communications.HTTP_REQUEST_METHOD_POST,      
+            :headers => {                                           
+                    "Content-Type" => Communications.REQUEST_CONTENT_TYPE_URL_ENCODED,
+                    "Authorization" => "Basic " + $.BASIC_AUTH_CREDENTIALS
+            },
+            :responseType => Communications.HTTP_RESPONSE_CONTENT_TYPE_JSON
+        };
+        var body = {
             "code" => code,
             "redirect_uri" => $.OAUTH_REDIRECT_URI,
             "grant_type" => "authorization_code",
         };
 
-        var options = {                                             // set the options
-            :method => Communications.HTTP_REQUEST_METHOD_GET,      // set HTTP method
-            :headers => {                                           // set headers
-                    "Content-Type" => Communications.REQUEST_CONTENT_TYPE_URL_ENCODED},
-                    "Authorization" => "Basic " + StringUtil.encodeBase64(CLIENT_ID + ":" + )},
-                                                                    // set response type
-            :responseType => Communications.HTTP_RESPONSE_CONTENT_TYPE_JSON
-        };
-
-        Communications.makeWebRequest("https://auth.smartcar.com/oauth/token",
-                params, options, method(:onReceive));
+        Communications.makeWebRequest(
+            "https://auth.smartcar.com/oauth/token", body, options, method(:onReceiveToken));
     }
 
-    // set up the response callback function
-    function onReceive(responseCode, data) {
-        if (responseCode == 200) {
-            System.println("Request Successful" + data);            // print success
-            System.println("Access T : " + data[$.ACCESS_TOKEN_KEY])
-            System.println("Refresh T: " + data[$.REFRESH_TOKEN_KEY])
-            System.println("Expires  : " + data[$.EXPIRES_IN_KEY])
+    function onReceiveToken(responseCode, data) {
+        if (responseCode != 200) {
+            System.println("Error Code: " + responseCode);
+            System.println("Data: " + data);
         }
-        else {
-            System.println("Response: " + responseCode);            // print response code
-        };
-    };
+
+        System.println("Request Successful: " + data);
+        System.println("Access Token : " + data[$.ACCESS_TOKEN_KEY]);
+        System.println("Refresh Token: " + data[$.REFRESH_TOKEN_KEY]);
+        System.println("Expires in s.: " + data[$.EXPIRES_IN_KEY]);
+    }
 }
