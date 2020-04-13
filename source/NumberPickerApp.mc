@@ -20,6 +20,8 @@ const ERROR_KEY = "error";
 
 
 class NumberPickerApp extends Application.AppBase {
+    var refreshToken = null;
+    var accessToken = null;
 
     function initialize() {
         AppBase.initialize();
@@ -29,14 +31,20 @@ class NumberPickerApp extends Application.AppBase {
     function onStart(state) {
         //check if creds are already present
         //if yes check if needed to refresh the token and refresh
-        //get cars list
-        //get car name
-        //display list of car
-        //or show the controls if there is only one
+        if (refreshToken == null) {
+            initiateOAuth();
+        } 
+        //or get cars list
+        else {
+            makeVehiclesRequest(accessToken);
+            //then
+            //get car name
+            //display list of car
+            //or show the controls if there is only one
+        }
 
         // Here tell user that we need to authenticate on device
         // WatchUi.requestUpdate();
-        initiateOAuth();
     }
 
     // onStop() is called when your application is exiting
@@ -117,8 +125,81 @@ class NumberPickerApp extends Application.AppBase {
         }
 
         System.println("Request Successful: " + data);
-        System.println("Access Token : " + data[$.ACCESS_TOKEN_KEY]);
-        System.println("Refresh Token: " + data[$.REFRESH_TOKEN_KEY]);
+        accessToken = data[$.ACCESS_TOKEN_KEY];
+        System.println("Access Token : " + accessToken);
+        refreshToken = data[$.REFRESH_TOKEN_KEY];
+        System.println("Refresh Token: " + refreshToken);
         System.println("Expires in s.: " + data[$.EXPIRES_IN_KEY]);
+        
+        makeRefreshTokenRequest(refreshToken);
+    }
+
+    function makeRefreshTokenRequest(refreshToken) {
+        var options = {
+            :method => Communications.HTTP_REQUEST_METHOD_POST,      
+            :headers => {                                           
+                    "Content-Type" => Communications.REQUEST_CONTENT_TYPE_URL_ENCODED,
+                    "Authorization" => "Basic " + $.BASIC_AUTH_CREDENTIALS
+            },
+            :responseType => Communications.HTTP_RESPONSE_CONTENT_TYPE_JSON
+        };
+        var body = {
+            "refresh_token" => refreshToken,
+            "grant_type" => "refresh_token",
+        };
+        Communications.makeWebRequest(
+            "https://auth.smartcar.com/oauth/token", body, options, method(:onReceiveAccessToken));
+    }
+
+    function onReceiveAccessToken(responseCode, data) {
+        //here 100% the same code as on main token received
+        if (responseCode != 200) {
+            System.println("Error Code: " + responseCode);
+            System.println("Data: " + data);
+        }
+
+        System.println("Request Successful: " + data);
+        accessToken = data[$.ACCESS_TOKEN_KEY];
+        System.println("Access Token : " + accessToken);
+        refreshToken = data[$.REFRESH_TOKEN_KEY];
+        System.println("Refresh Token: " + refreshToken);
+        System.println("Expires in s.: " + data[$.EXPIRES_IN_KEY]);
+
+        makeVehiclesRequest(accessToken);
+    }
+
+    function makeVehiclesRequest(accessToken) {
+        var options = {
+            :method => Communications.HTTP_REQUEST_METHOD_GET,      
+            :headers => {                                           
+                    "Authorization" => "Bearer " + accessToken,
+            },
+            :responseType => Communications.HTTP_RESPONSE_CONTENT_TYPE_JSON
+        };
+        
+        Communications.makeWebRequest(
+            "https://api.smartcar.com/v1.0/vehicles", {}, options, method(:onReceiveVehicle));
+    }
+
+    function onReceiveVehicle(responseCode, data) {
+        System.println("Git " + data);
+        makeVehiclesInfoRequest(accessToken, data["vehicles"][0]);
+    }
+
+    function makeVehiclesInfoRequest(accessToken, vehicleId) {
+        var options = {
+            :method => Communications.HTTP_REQUEST_METHOD_GET,      
+            :headers => {                                           
+                    "Authorization" => "Bearer " + accessToken,
+            },
+            :responseType => Communications.HTTP_RESPONSE_CONTENT_TYPE_JSON
+        };
+        
+        Communications.makeWebRequest(
+            "https://api.smartcar.com/v1.0/vehicles/" + vehicleId, {}, options, method(:onReceiveVehicleInfo));
+    }
+
+    function onReceiveVehicleInfo(responseCode, data) {
+        System.println("Git " + data);
     }
 }
