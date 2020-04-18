@@ -3,6 +3,9 @@ using Toybox.WatchUi;
 private const ADD_CARS_MENU_ID = "add_cars";
 
 class VehiclesMenu extends WatchUi.Menu2 {
+
+    //So far only support one, but need to keep track of displayed vehicles.
+    private var mNumberOfVehiclesInMenu = 0;
     
     function initialize(carApi) {
         View.initialize();
@@ -11,38 +14,55 @@ class VehiclesMenu extends WatchUi.Menu2 {
 
         setTitle("Keyfob");
         if (vehicle != null) {
-            addItem(new MenuItem(
-                    vehicle[$.MAKE_FIELD],
-                    vehicle[$.MODEL_FIELD],
-                    vehicle[$.ID_FIELD],
-                    {}
-                ));
-            addItem(new MenuItem(
-                        "Change car",
-                        "on phone",
-                        ADD_CARS_MENU_ID,
-                        {}
-                    ));
+            displayVehicleInMenu(vehicle);
         } else {
-            addItem(new MenuItem(
-                    "Add car",
+            displayInitialMenu();
+        }
+    }
+
+    function displayVehicleInMenu(vehicle) {
+        mNumberOfVehiclesInMenu = 1;
+        addItem(new MenuItem(
+                vehicle[$.MAKE_FIELD],
+                vehicle[$.MODEL_FIELD],
+                vehicle[$.ID_FIELD],
+                {}
+            ));
+        addItem(new MenuItem(
+                    "Change car",
                     "on phone",
                     ADD_CARS_MENU_ID,
                     {}
                 ));
-        }
+    }
 
+    function displayInitialMenu() {
+        mNumberOfVehiclesInMenu = 0;
+        addItem(new MenuItem(
+            "Add car",
+            "on phone",
+            ADD_CARS_MENU_ID,
+            {}
+        ));
+    }
+
+    function clearMenu() {
+        for (var i=0; i<mNumberOfVehiclesInMenu+1; i++) {
+            deleteItem(0);
+        }
     }
 }
 
 
 class VehiclesMenuDelegate extends WatchUi.Menu2InputDelegate {
+    var mMenu;
     var mCarApi;
     var mProgressBar;
 
-    function initialize(carApi) {
-        Menu2InputDelegate.initialize();
+    function initialize(menu, carApi) {
+        mMenu = menu;
         mCarApi = carApi;
+        Menu2InputDelegate.initialize();
     }
 
     function onSelect(menuItem) {
@@ -57,8 +77,11 @@ class VehiclesMenuDelegate extends WatchUi.Menu2InputDelegate {
     }
 
     function onLoadingFinished(result) {
-        System.println("Got callback: " + result);
-        //TODO update menu with fresh data
+        //TODO support error messages
+        if (result != null) {
+            mMenu.clearMenu();
+            mMenu.displayVehicleInMenu(result);
+        }
         hideProgress();
     }
 
