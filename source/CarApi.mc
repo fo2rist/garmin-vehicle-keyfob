@@ -14,6 +14,7 @@ private const ERROR_KEY = "error";
 class CarApi {
     var mRefreshToken = null;
     var mAccessToken = null;
+
     var mCurrentLoadingFinishedCallback = null;
 
     function getCachedVehicle() {
@@ -27,12 +28,9 @@ class CarApi {
         }
     }
 
-    function updateVehicle(loadingFinishedCallback) {
+    function authenticateOAuth(loadingFinishedCallback) {
         mCurrentLoadingFinishedCallback = loadingFinishedCallback;
-        initiateOAuth();
-    }
 
-    private function initiateOAuth() {
         // register a callback to capture results from OAuth requests
         Communications.registerForOAuthMessages(method(:onOAuthMessage));
         var params = {
@@ -75,10 +73,10 @@ class CarApi {
 
         System.println("OAuth Response: " + message.data);
         var code = message.data[$.RESPOSE_CODE_KEY];
-        makeTokenRequest(code);
+        makeInitialTokenRequest(code);
     }
 
-    private function makeTokenRequest(code) {
+    private function makeInitialTokenRequest(code) {
         var options = {
             :method => Communications.HTTP_REQUEST_METHOD_POST,      
             :headers => {                                           
@@ -97,25 +95,7 @@ class CarApi {
             "https://auth.smartcar.com/oauth/token", body, options, method(:onReceiveToken));
     }
 
-    function onReceiveToken(responseCode, data) {
-        if (responseCode != 200) {
-            System.println("Error Code: " + responseCode);
-            System.println("Data: " + data);
-            mCurrentLoadingFinishedCallback.invoke(null);
-        }
-
-        System.println("Request Successful: " + data);
-        mRefreshToken = data[$.REFRESH_TOKEN_KEY];
-        System.println("Refresh Token: " + mRefreshToken);
-        mAccessToken = data[$.ACCESS_TOKEN_KEY];
-        System.println("Access Token : " + mAccessToken);
-        System.println("Expires in s.: " + data[$.EXPIRES_IN_KEY]);
-        saveToken(createToken(mRefreshToken, mAccessToken, null)); //TODO calculate actual timesamp
-        
-        makeRefreshTokenRequest(mRefreshToken);
-    }
-
-    private function makeRefreshTokenRequest(refreshToken) {
+    private function makeTokenRefreshRequest() {
         var options = {
             :method => Communications.HTTP_REQUEST_METHOD_POST,      
             :headers => {                                           
@@ -125,38 +105,39 @@ class CarApi {
             :responseType => Communications.HTTP_RESPONSE_CONTENT_TYPE_JSON
         };
         var body = {
-            "refresh_token" => refreshToken,
+            "refresh_token" => mRefreshToken,
             "grant_type" => "refresh_token",
         };
         Communications.makeWebRequest(
             "https://auth.smartcar.com/oauth/token", body, options, method(:onReceiveAccessToken));
     }
 
-    function onReceiveAccessToken(responseCode, data) {
-        //here 100% the same code as on main token received
+    function onReceiveToken(responseCode, data) {
         if (responseCode != 200) {
-            System.println("Error Code: " + responseCode);
+            System.println("Token Error Code: " + responseCode);
             System.println("Data: " + data);
             mCurrentLoadingFinishedCallback.invoke(null);
             return;
         }
 
-        System.println("Request Successful: " + data);
+        System.println("Got Token: " + data);
         mRefreshToken = data[$.REFRESH_TOKEN_KEY];
-        System.println("Refresh Token: " + mRefreshToken);
         mAccessToken = data[$.ACCESS_TOKEN_KEY];
-        System.println("Access Token : " + mAccessToken);
-        System.println("Expires in s.: " + data[$.EXPIRES_IN_KEY]);
-        saveToken(createToken(mRefreshToken, mAccessToken, null)); //TODO calculate actual timesamp
-
-        makeVehiclesRequest(mAccessToken);
+        var token = createToken(mRefreshToken, mAccessToken, null); //TODO calculate actual timestamp
+        saveToken(token);
+        mCurrentLoadingFinishedCallback.invoke(token);
     }
 
-    function makeVehiclesRequest(accessToken) {
+    function fetchVehicleInfo(loadingFinishedCallback) {
+        mCurrentLoadingFinishedCallback = loadingFinishedCallback;
+        makeVehicleRequest();
+    }
+
+    function makeVehicleRequest() {
         var options = {
             :method => Communications.HTTP_REQUEST_METHOD_GET,      
             :headers => {                                           
-                    "Authorization" => "Bearer " + accessToken,
+                    "Authorization" => "Bearer " + mAccessToken,
             },
             :responseType => Communications.HTTP_RESPONSE_CONTENT_TYPE_JSON
         };
@@ -166,7 +147,14 @@ class CarApi {
     }
 
     function onReceiveVehicle(responseCode, data) {
-        System.println("Get " + data);
+        if (responseCode != 200) {
+            System.println("Vehicle ID Error Code: " + responseCode);
+            System.println("Data: " + data);
+            mCurrentLoadingFinishedCallback.invoke(null);
+            return;
+        }
+
+        System.println("Get vehicle id: " + data);
         makeVehiclesInfoRequest(mAccessToken, data["vehicles"][0]);
     }
 
@@ -184,7 +172,14 @@ class CarApi {
     }
 
     function onReceiveVehicleInfo(responseCode, data) {
-        System.println("Get " + data);
+        if (responseCode != 200) {
+            System.println("Vehicle Info Error Code: " + responseCode);
+            System.println("Data: " + data);
+            mCurrentLoadingFinishedCallback.invoke(null);
+            return;
+        }
+
+        System.println("Get vehicle: " + data);
         var vehicle = createCar(data[$.ID_KEY], data[$.MAKE_KEY], data[$.MODEL_KEY]);
         saveVehicle(vehicle);
         mCurrentLoadingFinishedCallback.invoke(vehicle);

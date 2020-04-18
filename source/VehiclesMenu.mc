@@ -70,17 +70,27 @@ class VehiclesMenuDelegate extends WatchUi.Menu2InputDelegate {
 
         if (menuItem.getId() == ADD_CARS_MENU_ID) {
             showProgress();
-            mCarApi.updateVehicle(method(:onLoadingFinished));
+            mCarApi.authenticateOAuth(method(:onAuthenticated));
         }
 
         return true;
     }
 
-    function onLoadingFinished(result) {
+    function onAuthenticated(token) {
+        if (token != null) {
+            mProgressBar.setDisplayString("Loading\nvehicle info");
+            mCarApi.fetchVehicleInfo(method(:onLoadingFinished));
+        } else {
+            //TODO support error messages
+            hideProgress();
+        }
+    }
+
+    function onLoadingFinished(vehicle) {
         //TODO support error messages
-        if (result != null) {
+        if (vehicle != null) {
             mMenu.clearMenu();
-            mMenu.displayVehicleInMenu(result);
+            mMenu.displayVehicleInMenu(vehicle);
         }
         hideProgress();
     }
