@@ -53,7 +53,7 @@ class NumberPickerApp extends Application.AppBase {
 
     // Return the initial view of your application here
     function getInitialView() {
-        return [ new NumberPickerView(), new BaseInputDelegate() ];
+        return [ new VehiclesMenu(["Camaro", "Corvette"]), new VehiclesMenuDelegate() ];
     }
 
     function initiateOAuth() {
