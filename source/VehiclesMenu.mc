@@ -31,6 +31,7 @@ class VehiclesMenu extends WatchUi.Menu2 {
 
 class VehiclesMenuDelegate extends WatchUi.Menu2InputDelegate {
     var mCarApi;
+    var mProgressBar;
 
     function initialize(carApi) {
         Menu2InputDelegate.initialize();
@@ -41,8 +42,11 @@ class VehiclesMenuDelegate extends WatchUi.Menu2InputDelegate {
         System.println(menuItem.getLabel());
 
         if (menuItem.getId() == ADD_CARS_MENU_ID) {
-            // Here tell user that we need to authenticate on device
+            //TODO add callback to close menu if the auth completed/cancelled
             mCarApi.loadCars();
+
+            var mProgressBar = new WatchUi.ProgressBar( "Finish authentication on phone", null );
+            WatchUi.pushView( mProgressBar, new OAuthProgressDelegate(), WatchUi.SLIDE_DOWN );
         }
 
         return true;
