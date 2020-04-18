@@ -1,36 +1,32 @@
-const OAUTH_REDIRECT_URI = "https://localhost";
+private const OAUTH_REDIRECT_URI = "https://localhost";
 
-const ACCESS_TOKEN_KEY = "access_token";
-const REFRESH_TOKEN_KEY = "refresh_token";
-const EXPIRES_IN_KEY = "expires_in";
+private const ACCESS_TOKEN_KEY = "access_token";
+private const REFRESH_TOKEN_KEY = "refresh_token";
+private const EXPIRES_IN_KEY = "expires_in";
 
-const RESPOSE_CODE_KEY = "code";
-const ERROR_KEY = "error";
+private const ID_KEY = "id";
+private const MAKE_KEY = "make";
+private const MODEL_KEY = "model";
+
+private const RESPOSE_CODE_KEY = "code";
+private const ERROR_KEY = "error";
 
 class CarApi {
-    var refreshToken = null;
-    var accessToken = null;
+    var mRefreshToken = null;
+    var mAccessToken = null;
+    var mCurrentLoadingFinishedCallback = null;
 
-    function getCachedCars() {
-        return ["Camaro", "Corvette"];
+    function getCachedVehicle() {
+        var vehicle = loadVehicle();
+        return vehicle;
     }
 
-    function loadCars() {
-        //if yes check if needed to refresh the token and refresh
-        if (refreshToken == null) {
-            initiateOAuth();
-        } 
-        //or get cars list
-        else {
-            makeVehiclesRequest(accessToken);
-            //then
-            //get car name
-            //display list of car
-            //or show the controls if there is only one
-        }
+    function updateVehicle(loadingFinishedCallback) {
+        mCurrentLoadingFinishedCallback = loadingFinishedCallback;
+        initiateOAuth();
     }
 
-    function initiateOAuth() {
+    private function initiateOAuth() {
         // register a callback to capture results from OAuth requests
         Communications.registerForOAuthMessages(method(:onOAuthMessage));
         var params = {
@@ -56,15 +52,18 @@ class CarApi {
     function onOAuthMessage(message) {
         if (message.data == null) {
             System.println("OAuth Failed");
+            mCurrentLoadingFinishedCallback.invoke(null);
             return;
         }
         var error = message.data[$.ERROR_KEY];
         if (error != null) {
             System.println("OAuth Error: " + error);
+            mCurrentLoadingFinishedCallback.invoke(null);
             return;
         }
         if (message.data.isEmpty()) {
             System.println("OAuth Empty response");
+            mCurrentLoadingFinishedCallback.invoke(null);
             return;
         }
 
@@ -96,16 +95,18 @@ class CarApi {
         if (responseCode != 200) {
             System.println("Error Code: " + responseCode);
             System.println("Data: " + data);
+            mCurrentLoadingFinishedCallback.invoke(null);
         }
 
         System.println("Request Successful: " + data);
-        accessToken = data[$.ACCESS_TOKEN_KEY];
-        System.println("Access Token : " + accessToken);
-        refreshToken = data[$.REFRESH_TOKEN_KEY];
-        System.println("Refresh Token: " + refreshToken);
+        mRefreshToken = data[$.REFRESH_TOKEN_KEY];
+        System.println("Refresh Token: " + mRefreshToken);
+        mAccessToken = data[$.ACCESS_TOKEN_KEY];
+        System.println("Access Token : " + mAccessToken);
         System.println("Expires in s.: " + data[$.EXPIRES_IN_KEY]);
+        saveToken(createToken(mRefreshToken, mAccessToken, null)); //TODO calculate actual timesamp
         
-        makeRefreshTokenRequest(refreshToken);
+        makeRefreshTokenRequest(mRefreshToken);
     }
 
     function makeRefreshTokenRequest(refreshToken) {
@@ -130,16 +131,19 @@ class CarApi {
         if (responseCode != 200) {
             System.println("Error Code: " + responseCode);
             System.println("Data: " + data);
+            mCurrentLoadingFinishedCallback.invoke(null);
+            return;
         }
 
         System.println("Request Successful: " + data);
-        accessToken = data[$.ACCESS_TOKEN_KEY];
-        System.println("Access Token : " + accessToken);
-        refreshToken = data[$.REFRESH_TOKEN_KEY];
-        System.println("Refresh Token: " + refreshToken);
+        mRefreshToken = data[$.REFRESH_TOKEN_KEY];
+        System.println("Refresh Token: " + mRefreshToken);
+        mAccessToken = data[$.ACCESS_TOKEN_KEY];
+        System.println("Access Token : " + mAccessToken);
         System.println("Expires in s.: " + data[$.EXPIRES_IN_KEY]);
+        saveToken(createToken(mRefreshToken, mAccessToken, null)); //TODO calculate actual timesamp
 
-        makeVehiclesRequest(accessToken);
+        makeVehiclesRequest(mAccessToken);
     }
 
     function makeVehiclesRequest(accessToken) {
@@ -157,7 +161,7 @@ class CarApi {
 
     function onReceiveVehicle(responseCode, data) {
         System.println("Get " + data);
-        makeVehiclesInfoRequest(accessToken, data["vehicles"][0]);
+        makeVehiclesInfoRequest(mAccessToken, data["vehicles"][0]);
     }
 
     function makeVehiclesInfoRequest(accessToken, vehicleId) {
@@ -175,5 +179,8 @@ class CarApi {
 
     function onReceiveVehicleInfo(responseCode, data) {
         System.println("Get " + data);
+        var vehicle = createCar(data[$.ID_KEY], data[$.MAKE_KEY], data[$.MODEL_KEY]);
+        saveVehicle(vehicle);
+        mCurrentLoadingFinishedCallback.invoke(vehicle);
     }
 }

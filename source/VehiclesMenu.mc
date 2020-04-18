@@ -1,30 +1,37 @@
 using Toybox.WatchUi;
 
-const ADD_CARS_MENU_ID = "add_cars";
+private const ADD_CARS_MENU_ID = "add_cars";
 
 class VehiclesMenu extends WatchUi.Menu2 {
     
     function initialize(carApi) {
         View.initialize();
 
-        var vehiclesList = carApi.getCachedCars();
+        var vehicle = carApi.getCachedVehicle();
 
         setTitle("Keyfob");
-        for( var i = 0; i < vehiclesList.size(); i++ ) {
+        if (vehicle != null) {
             addItem(new MenuItem(
-                    vehiclesList[i],
-                    "subLabel",
-                    vehiclesList[i],
+                    vehicle[$.MAKE_FIELD],
+                    vehicle[$.MODEL_FIELD],
+                    vehicle[$.ID_FIELD],
+                    {}
+                ));
+            addItem(new MenuItem(
+                        "Change car",
+                        "on phone",
+                        ADD_CARS_MENU_ID,
+                        {}
+                    ));
+        } else {
+            addItem(new MenuItem(
+                    "Add car",
+                    "on phone",
+                    ADD_CARS_MENU_ID,
                     {}
                 ));
         }
 
-        addItem(new MenuItem(
-                    "Add cars",
-                    "authenticate on phone",
-                    ADD_CARS_MENU_ID,
-                    {}
-                ));
     }
 }
 
@@ -42,13 +49,32 @@ class VehiclesMenuDelegate extends WatchUi.Menu2InputDelegate {
         System.println(menuItem.getLabel());
 
         if (menuItem.getId() == ADD_CARS_MENU_ID) {
-            //TODO add callback to close menu if the auth completed/cancelled
-            mCarApi.loadCars();
-
-            var mProgressBar = new WatchUi.ProgressBar( "Finish authentication on phone", null );
-            WatchUi.pushView( mProgressBar, new OAuthProgressDelegate(), WatchUi.SLIDE_DOWN );
+            showProgress();
+            mCarApi.updateVehicle(method(:onLoadingFinished));
         }
 
         return true;
+    }
+
+    function onLoadingFinished(result) {
+        System.println("Got callback: " + result);
+        //TODO update menu with fresh data
+        hideProgress();
+    }
+
+    function showProgress() {
+        if (mProgressBar != null) {
+            return;
+        }
+        mProgressBar = new WatchUi.ProgressBar( "Finish\nauthentication\non phone", null );
+        WatchUi.pushView( mProgressBar, new OAuthProgressDelegate(), WatchUi.SLIDE_DOWN );
+    }
+
+    function hideProgress() {
+        if (mProgressBar == null) {
+            return;
+        }
+        mProgressBar = null;
+        WatchUi.popView(WatchUi.SLIDE_UP);
     }
 }
