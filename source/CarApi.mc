@@ -17,11 +17,17 @@ class CarApi {
 
     var mCurrentLoadingFinishedCallback = null;
 
+    function initialize() {
+        var token = loadToken();
+        if (token != null) {
+            mRefreshToken = token[$.REFRESH_TOKEN_FIELD];
+            mAccessToken = token[$.ACCESS_TOKEN_FIELD];
+        }
+    }
+
     function getCachedVehicle() {
         var vehicle = loadVehicle();
-        var token = loadToken();
-        //TODO check validity of token, so far if it's missing, the vehicle isn't accessible
-        if (token != null) {
+        if (mRefreshToken != null) {
             return vehicle;
         } else {
             return null;
@@ -93,6 +99,11 @@ class CarApi {
 
         Communications.makeWebRequest(
             "https://auth.smartcar.com/oauth/token", body, options, method(:onReceiveToken));
+    }
+
+    function refreshToken(loadingFinishedCallback) {
+        mCurrentLoadingFinishedCallback = loadingFinishedCallback;
+        makeTokenRefreshRequest();
     }
 
     private function makeTokenRefreshRequest() {
