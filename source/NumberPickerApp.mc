@@ -19,7 +19,7 @@ const RESPOSE_CODE_KEY = "code";
 const ERROR_KEY = "error";
 
 
-class NumberPickerApp extends Application.AppBase {
+class VehicleKeychainApp extends Application.AppBase {
     var refreshToken = null;
     var accessToken = null;
 
