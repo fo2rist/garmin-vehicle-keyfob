@@ -18,7 +18,13 @@ class CarApi {
 
     function getCachedVehicle() {
         var vehicle = loadVehicle();
-        return vehicle;
+        var token = loadToken();
+        //TODO check validity of token, so far if it's missing, the vehicle isn't accessible
+        if (token != null) {
+            return vehicle;
+        } else {
+            return null;
+        }
     }
 
     function updateVehicle(loadingFinishedCallback) {
@@ -72,7 +78,7 @@ class CarApi {
         makeTokenRequest(code);
     }
 
-    function makeTokenRequest(code) {
+    private function makeTokenRequest(code) {
         var options = {
             :method => Communications.HTTP_REQUEST_METHOD_POST,      
             :headers => {                                           
@@ -109,7 +115,7 @@ class CarApi {
         makeRefreshTokenRequest(mRefreshToken);
     }
 
-    function makeRefreshTokenRequest(refreshToken) {
+    private function makeRefreshTokenRequest(refreshToken) {
         var options = {
             :method => Communications.HTTP_REQUEST_METHOD_POST,      
             :headers => {                                           
@@ -164,7 +170,7 @@ class CarApi {
         makeVehiclesInfoRequest(mAccessToken, data["vehicles"][0]);
     }
 
-    function makeVehiclesInfoRequest(accessToken, vehicleId) {
+    private function makeVehiclesInfoRequest(accessToken, vehicleId) {
         var options = {
             :method => Communications.HTTP_REQUEST_METHOD_GET,      
             :headers => {                                           
