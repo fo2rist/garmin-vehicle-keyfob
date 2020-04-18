@@ -3,11 +3,15 @@ using Toybox.WatchUi;
 private const ADD_CARS_MENU_ID = "add_cars";
 
 class VehiclesMenu extends WatchUi.Menu2 {
+    private var mCarApi;
 
     //So far only support one, but need to keep track of displayed vehicles.
     private var mNumberOfVehiclesInMenu = 0;
+
+    private var mProgressBar;
     
     function initialize(carApi) {
+        mCarApi = carApi;
         View.initialize();
 
         var vehicle = carApi.getCachedVehicle();
@@ -51,49 +55,6 @@ class VehiclesMenu extends WatchUi.Menu2 {
             deleteItem(0);
         }
     }
-}
-
-
-class VehiclesMenuDelegate extends WatchUi.Menu2InputDelegate {
-    var mMenu;
-    var mCarApi;
-    var mProgressBar;
-
-    function initialize(menu, carApi) {
-        mMenu = menu;
-        mCarApi = carApi;
-        Menu2InputDelegate.initialize();
-    }
-
-    function onSelect(menuItem) {
-        System.println(menuItem.getLabel());
-
-        if (menuItem.getId() == ADD_CARS_MENU_ID) {
-            showProgress();
-            mCarApi.authenticateOAuth(method(:onAuthenticated));
-        }
-
-        return true;
-    }
-
-    function onAuthenticated(token) {
-        if (token != null) {
-            mProgressBar.setDisplayString("Loading\nvehicle info");
-            mCarApi.fetchVehicleInfo(method(:onLoadingFinished));
-        } else {
-            //TODO support error messages
-            hideProgress();
-        }
-    }
-
-    function onLoadingFinished(vehicle) {
-        //TODO support error messages
-        if (vehicle != null) {
-            mMenu.clearMenu();
-            mMenu.displayVehicleInMenu(vehicle);
-        }
-        hideProgress();
-    }
 
     function showProgress() {
         if (mProgressBar != null) {
@@ -109,5 +70,54 @@ class VehiclesMenuDelegate extends WatchUi.Menu2InputDelegate {
         }
         mProgressBar = null;
         WatchUi.popView(WatchUi.SLIDE_UP);
+    }
+
+    function updateProgress(message) {
+        mProgressBar.setDisplayString(message);
+    }
+
+    function authenticateOAuth() {
+        showProgress();
+        mCarApi.authenticateOAuth(method(:onAuthenticated));
+    }
+
+    function onAuthenticated(token) {
+        if (token != null) {
+            updateProgress("Loading\nvehicle info");
+            mCarApi.fetchVehicleInfo(method(:onVehicleLoaded));
+        } else {
+            //TODO support error messages
+            hideProgress();
+        }
+    }
+
+    function onVehicleLoaded(vehicle) {
+        //TODO support error messages
+        if (vehicle != null) {
+            clearMenu();
+            displayVehicleInMenu(vehicle);
+        }
+        hideProgress();
+    }
+}
+
+
+class VehiclesMenuDelegate extends WatchUi.Menu2InputDelegate {
+    var mView;
+
+    function initialize(view, carApi) {
+        mView = view;
+        Menu2InputDelegate.initialize();
+    }
+
+    function onSelect(menuItem) {
+        System.println(menuItem.getLabel());
+
+        if (menuItem.getId() == ADD_CARS_MENU_ID) {
+            mView.authenticateOAuth();
+        } else {
+            //TODO show lock/unlock controls
+        }
+        return true;
     }
 }
