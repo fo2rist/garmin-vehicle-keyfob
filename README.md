@@ -14,7 +14,8 @@ Build working app add one more file to sources that contains following constants
 const CLIENT_ID = "UUID HERE";
 const BASIC_AUTH_CREDENTIALS = "CREDENTIAL FOR YOU APP HER";
 ```
-to obtain the keys sign up and register an app on smartcar.com
+(to obtain the keys sign up and register an app on smartcar.com)
+and generate a signing certificate according to _Generating a Developer Key_ [instruction](https://developer.garmin.com/connect-iq/programmers-guide/getting-started) (I place it in '~/.garmin/developer_key.der' for convinience)
 
 ## How to build
 To build the executable
