@@ -64,7 +64,7 @@ class VehiclesMenu extends WatchUi.Menu2 {
             return;
         }
         mProgressBar = new WatchUi.ProgressBar(message, null);
-        WatchUi.pushView(mProgressBar, new OAuthProgressDelegate(), WatchUi.SLIDE_DOWN);
+        WatchUi.pushView(mProgressBar, new ProgressBarDelegate(method(:onProgressDismissed)), WatchUi.SLIDE_DOWN);
     }
 
     function hideProgress() {
@@ -77,6 +77,10 @@ class VehiclesMenu extends WatchUi.Menu2 {
 
     function updateProgress(message) {
         mProgressBar.setDisplayString(message);
+    }
+
+    function onProgressDismissed() {
+        mProgressBar = null;
     }
 
     function authenticateOAuth() {
