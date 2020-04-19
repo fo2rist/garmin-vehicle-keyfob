@@ -7,9 +7,10 @@ class VehiclesMenu extends WatchUi.Menu2 {
 
     //So far only support one, but need to keep track of displayed vehicles.
     private var mNumberOfVehiclesInMenu = 0;
+    private var mTokenIsFresh = false;
 
     private var mProgressBar;
-    
+
     function initialize(carApi) {
         mCarApi = carApi;
         View.initialize();
@@ -29,7 +30,7 @@ class VehiclesMenu extends WatchUi.Menu2 {
         addItem(new MenuItem(
                 vehicle[$.MAKE_FIELD],
                 vehicle[$.MODEL_FIELD],
-                vehicle[$.ID_FIELD],
+                vehicle,
                 {}
             ));
         addItem(new MenuItem(
@@ -42,6 +43,7 @@ class VehiclesMenu extends WatchUi.Menu2 {
 
     function displayInitialMenu() {
         mNumberOfVehiclesInMenu = 0;
+        mTokenIsFresh = true;
         addItem(new MenuItem(
             "Add car",
             "on phone",
@@ -56,12 +58,13 @@ class VehiclesMenu extends WatchUi.Menu2 {
         }
     }
 
-    function showProgress() {
+    function showProgress(message) {
         if (mProgressBar != null) {
+            updateProgress(message);
             return;
         }
-        mProgressBar = new WatchUi.ProgressBar( "Finish\nauthentication\non phone", null );
-        WatchUi.pushView( mProgressBar, new OAuthProgressDelegate(), WatchUi.SLIDE_DOWN );
+        mProgressBar = new WatchUi.ProgressBar(message, null);
+        WatchUi.pushView(mProgressBar, new OAuthProgressDelegate(), WatchUi.SLIDE_DOWN);
     }
 
     function hideProgress() {
@@ -77,7 +80,7 @@ class VehiclesMenu extends WatchUi.Menu2 {
     }
 
     function authenticateOAuth() {
-        showProgress();
+        showProgress("Finish\nauthentication\non phone");
         mCarApi.authenticateOAuth(method(:onAuthenticated));
     }
 
@@ -99,13 +102,47 @@ class VehiclesMenu extends WatchUi.Menu2 {
         }
         hideProgress();
     }
-}
 
+    function onShow() {
+        //TODO properly check here if need to refresh
+        if (!mTokenIsFresh) {
+            refreshAuthToken();
+        }
+    }
+
+    private function refreshAuthToken() {
+        showProgress("Checking\naccess");
+        mCarApi.refreshToken(method(:onTokenRefreshed));
+    }
+
+    function onTokenRefreshed(token) {
+        mTokenIsFresh = true;
+        hideProgress();
+    }
+
+    function displayVehicleControls(vehicle) {
+        var lockMenu = new Rez.Menus.LockMenu();
+        lockMenu.setTitle(vehicle[$.MAKE_FIELD]+" "+vehicle[$.MODEL_FIELD]);
+        WatchUi.pushView(lockMenu, new LockMenuDelegate(vehicle[$.ID_FIELD], method(:onLockUnlockMenuSelected)),
+                WatchUi.SLIDE_IMMEDIATE);
+    }
+
+    function onLockUnlockMenuSelected(vehicleId, action) {
+        showProgress(action == Lock ? "Locking" : "Unlocking");
+        mCarApi.lockUnlock(vehicleId, action, method(:onLockFinishes));
+    }
+
+    function onLockFinishes(result) {
+        //TODO support errors
+        hideProgress();
+        WatchUi.popView(WatchUi.SLIDE_IMMEDIATE); // close menu
+    }
+}
 
 class VehiclesMenuDelegate extends WatchUi.Menu2InputDelegate {
     var mView;
 
-    function initialize(view, carApi) {
+    function initialize(view) {
         mView = view;
         Menu2InputDelegate.initialize();
     }
@@ -116,7 +153,7 @@ class VehiclesMenuDelegate extends WatchUi.Menu2InputDelegate {
         if (menuItem.getId() == ADD_CARS_MENU_ID) {
             mView.authenticateOAuth();
         } else {
-            //TODO show lock/unlock controls
+            mView.displayVehicleControls(menuItem.getId());
         }
         return true;
     }

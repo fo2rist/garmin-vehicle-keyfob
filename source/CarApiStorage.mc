@@ -8,7 +8,8 @@ function saveToken(token) {
 }
 
 function loadToken() {
-    return Storage.getValue(TOKEN_KEY);
+    var value = Storage.getValue(TOKEN_KEY);
+    return (value != null) ? value : null;
 }
 
 function saveVehicle(vehicle) {
@@ -16,5 +17,6 @@ function saveVehicle(vehicle) {
 }
 
 function loadVehicle() {
-    return Storage.getValue(VEHICLES_LIST_KEY)[0];
+    var value = Storage.getValue(VEHICLES_LIST_KEY);
+    return (value != null) ? value[0] : null;
 }

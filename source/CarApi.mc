@@ -84,8 +84,8 @@ class CarApi {
 
     private function makeInitialTokenRequest(code) {
         var options = {
-            :method => Communications.HTTP_REQUEST_METHOD_POST,      
-            :headers => {                                           
+            :method => Communications.HTTP_REQUEST_METHOD_POST,
+            :headers => {
                     "Content-Type" => Communications.REQUEST_CONTENT_TYPE_URL_ENCODED,
                     "Authorization" => "Basic " + $.BASIC_AUTH_CREDENTIALS
             },
@@ -108,8 +108,8 @@ class CarApi {
 
     private function makeTokenRefreshRequest() {
         var options = {
-            :method => Communications.HTTP_REQUEST_METHOD_POST,      
-            :headers => {                                           
+            :method => Communications.HTTP_REQUEST_METHOD_POST,
+            :headers => {
                     "Content-Type" => Communications.REQUEST_CONTENT_TYPE_URL_ENCODED,
                     "Authorization" => "Basic " + $.BASIC_AUTH_CREDENTIALS
             },
@@ -120,7 +120,7 @@ class CarApi {
             "grant_type" => "refresh_token",
         };
         Communications.makeWebRequest(
-            "https://auth.smartcar.com/oauth/token", body, options, method(:onReceiveAccessToken));
+            "https://auth.smartcar.com/oauth/token", body, options, method(:onReceiveToken));
     }
 
     function onReceiveToken(responseCode, data) {
@@ -146,13 +146,13 @@ class CarApi {
 
     function makeVehicleRequest() {
         var options = {
-            :method => Communications.HTTP_REQUEST_METHOD_GET,      
-            :headers => {                                           
+            :method => Communications.HTTP_REQUEST_METHOD_GET,
+            :headers => {
                     "Authorization" => "Bearer " + mAccessToken,
             },
             :responseType => Communications.HTTP_RESPONSE_CONTENT_TYPE_JSON
         };
-        
+
         Communications.makeWebRequest(
             "https://api.smartcar.com/v1.0/vehicles", {}, options, method(:onReceiveVehicle));
     }
@@ -166,18 +166,18 @@ class CarApi {
         }
 
         System.println("Get vehicle id: " + data);
-        makeVehiclesInfoRequest(mAccessToken, data["vehicles"][0]);
+        makeVehiclesInfoRequest(data["vehicles"][0]);
     }
 
-    private function makeVehiclesInfoRequest(accessToken, vehicleId) {
+    private function makeVehiclesInfoRequest(vehicleId) {
         var options = {
-            :method => Communications.HTTP_REQUEST_METHOD_GET,      
-            :headers => {                                           
-                    "Authorization" => "Bearer " + accessToken,
+            :method => Communications.HTTP_REQUEST_METHOD_GET,
+            :headers => {
+                    "Authorization" => "Bearer " + mAccessToken,
             },
             :responseType => Communications.HTTP_RESPONSE_CONTENT_TYPE_JSON
         };
-        
+
         Communications.makeWebRequest(
             "https://api.smartcar.com/v1.0/vehicles/" + vehicleId, {}, options, method(:onReceiveVehicleInfo));
     }
@@ -194,5 +194,41 @@ class CarApi {
         var vehicle = createCar(data[$.ID_KEY], data[$.MAKE_KEY], data[$.MODEL_KEY]);
         saveVehicle(vehicle);
         mCurrentLoadingFinishedCallback.invoke(vehicle);
+    }
+
+    function lockUnlock(vehicleId, action, loadingFinishedCallback) {
+        mCurrentLoadingFinishedCallback = loadingFinishedCallback;
+        makeLockUnlockRequest(vehicleId, action);
+    }
+
+    private function makeLockUnlockRequest(vehicleId, action) {
+        System.println("V ID: " + vehicleId);
+        System.println("Tok : " + mAccessToken);
+        var options = {
+            :method => Communications.HTTP_REQUEST_METHOD_POST,
+            :headers => {
+                    "Content-Type" => Communications.REQUEST_CONTENT_TYPE_JSON,
+                    "Authorization" => "Bearer " + mAccessToken,
+            },
+            :responseType => Communications.HTTP_RESPONSE_CONTENT_TYPE_JSON
+        };
+        var body = {
+            "action" => (action == Lock) ? "LOCK" : "UNLOCK"
+        };
+
+        Communications.makeWebRequest(
+            "https://api.smartcar.com/v1.0/vehicles/"+vehicleId+"/security", body, options, method(:onReceiveLocked));
+    }
+
+    function onReceiveLocked(responseCode, data) {
+        if (responseCode != 200) {
+            System.println("Locking Error Code: " + responseCode);
+            System.println("Data: " + data);
+            mCurrentLoadingFinishedCallback.invoke(null);
+            return;
+        }
+
+        System.println("Get locking response: " + data);
+        mCurrentLoadingFinishedCallback.invoke(data);
     }
 }

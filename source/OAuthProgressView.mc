@@ -1,5 +1,6 @@
 using Toybox.WatchUi;
 
+//TODO rename to generic progress view
 class OAuthProgressView extends WatchUi.ProgressBar {
 }
 

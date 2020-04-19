@@ -1,0 +1,4 @@
+enum {
+    Lock,
+    Unlock
+}

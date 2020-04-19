@@ -23,8 +23,8 @@ class VehicleKeychainApp extends Application.AppBase {
 
     // Return the initial view of your application here
     function getInitialView() {
-        var menuView = new VehiclesMenu(carApi); 
-        var menuDelegate = new VehiclesMenuDelegate(menuView, carApi);
+        var menuView = new VehiclesMenu(carApi);
+        var menuDelegate = new VehiclesMenuDelegate(menuView);
         return [ menuView, menuDelegate ];
     }
 }

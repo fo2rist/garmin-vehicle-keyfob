@@ -1,3 +1,5 @@
 <resources>
     <string id="AppName">Vehicle Keychain</string>
+    <string id="menu_item_lock">Lock</string>
+    <string id="menu_item_unlock">Unlock</string>
 </resources>

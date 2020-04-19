@@ -1,0 +1,4 @@
+<menu id="LockMenu">
+    <menu-item id="item_lock" label="@Strings.menu_item_lock" />
+    <menu-item id="item_unlock" label="@Strings.menu_item_unlock" />
+</menu>
