@@ -1,6 +1,7 @@
 # Garmin Vehicle Keyfob
 Garmin app that allow to Lock/Unlock a car from watch
-
+![Main screen](docs/keyfob_main_screen.png?raw=true)
+![Lock screen](docs/keyfob_lock_screen.png?raw=true)
 
 ## Requirements
 App uses [Garmin Connect-IQ SDK](https://developer.garmin.com/connect-iq/overview/) it needs to be installed prior build
