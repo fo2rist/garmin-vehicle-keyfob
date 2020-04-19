@@ -40,20 +40,20 @@ class CarApi {
         // register a callback to capture results from OAuth requests
         Communications.registerForOAuthMessages(method(:onOAuthMessage));
         var params = {
-            "scope" => Communications.encodeURL("required:control_security required:read_vehicle_info read_location"),
+            "scope" => "required:control_security required:read_vehicle_info read_location",
             "redirect_uri" => $.OAUTH_REDIRECT_URI,
             "response_type" => "code",
             "client_id" => $.CLIENT_ID,
             "approval_prompt" => "force",
             "single_select" => "true",
-            "mode" => "test"
+            "mode" => "test", // use this for testing
         };
 
         System.println("Initiate OAuth");
         Communications.makeOAuthRequest(
             "https://connect.smartcar.com/oauth/authorize",
             params,
-            "https://connect.smartcar.com/oauth/authorize",
+            $.OAUTH_REDIRECT_URI,
             Communications.OAUTH_RESULT_TYPE_URL,
             {$.RESPOSE_CODE_KEY => $.RESPOSE_CODE_KEY, $.ERROR_KEY => $.ERROR_KEY}
         );
@@ -87,7 +87,7 @@ class CarApi {
             :method => Communications.HTTP_REQUEST_METHOD_POST,
             :headers => {
                     "Content-Type" => Communications.REQUEST_CONTENT_TYPE_URL_ENCODED,
-                    "Authorization" => "Basic " + $.BASIC_AUTH_CREDENTIALS
+                    "Authorization" => "Basic " + $.BASIC_AUTH_CREDENTIALS,
             },
             :responseType => Communications.HTTP_RESPONSE_CONTENT_TYPE_JSON
         };
