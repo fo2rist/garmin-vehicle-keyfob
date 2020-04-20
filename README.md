@@ -6,10 +6,10 @@ Garmin app that allow to Lock/Unlock a car from watch
 ![Lock screen](docs/keyfob_lock_screen.png?raw=true)
 
 ## Requirements
-App uses [Garmin Connect-IQ SDK](https://developer.garmin.com/connect-iq/overview/) it needs to be installed prior build
-App uses [Smartcar API](https://smartcar.com/docs/api) to connect to vehicle.
+- App uses [Garmin Connect-IQ SDK](https://developer.garmin.com/connect-iq/overview/) it needs to be installed prior build
+- App uses [Smartcar API](https://smartcar.com/docs/api) to connect to vehicle.
 
-Build working app add one more file to sources that contains following constants to connect to Smartcar
+To build a working app add one more file to `/source` that contains following constants for Smartcar API
 ```
 const CLIENT_ID = "UUID HERE";
 const BASIC_AUTH_CREDENTIALS = "CREDENTIAL FOR YOU APP HER";
