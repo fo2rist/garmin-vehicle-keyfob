@@ -46,7 +46,7 @@ class CarApi {
             "client_id" => $.CLIENT_ID,
             "approval_prompt" => "force",
             "single_select" => "true",
-            "mode" => "test", // use this for testing
+            "mode" => "test", // use this for testing or comment out for release
         };
 
         System.println("Initiate OAuth");

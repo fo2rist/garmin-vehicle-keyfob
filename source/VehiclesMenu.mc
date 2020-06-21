@@ -1,12 +1,14 @@
 using Toybox.WatchUi;
 
-private const ADD_CARS_MENU_ID = "add_cars";
+private const MENU_ID_LOCK = "lock";
+private const MENU_ID_UNLOCK = "unlock";
+private const MENU_ID_ATHORIZE_CAR = "authorize_car";
 
 class VehiclesMenu extends WatchUi.Menu2 {
     private var mCarApi;
 
     //So far only support one, but need to keep track of displayed vehicles.
-    private var mNumberOfVehiclesInMenu = 0;
+    private var mNumberOfItemsInMenu = 0;
     private var mTokenIsFresh = false;
 
     private var mProgressBar;
@@ -17,43 +19,54 @@ class VehiclesMenu extends WatchUi.Menu2 {
 
         var vehicle = carApi.getCachedVehicle();
 
-        setTitle("Keyfob");
-        if (vehicle != null) {
-            displayVehicleInMenu(vehicle);
-        } else {
+        if (vehicle == null) {
             displayInitialMenu();
+        } else {
+            displayVehicleMenu(vehicle);
         }
     }
 
-    function displayVehicleInMenu(vehicle) {
-        mNumberOfVehiclesInMenu = 1;
+    // Show menu items with vehicle actions (go to lock-menu, forget)
+    function displayVehicleMenu(vehicle) {
+        mNumberOfItemsInMenu = 3;
         addItem(new MenuItem(
-                vehicle[$.MAKE_FIELD],
-                vehicle[$.MODEL_FIELD],
-                vehicle,
-                {}
-            ));
-        addItem(new MenuItem(
-                    "Change car",
-                    "on phone",
-                    ADD_CARS_MENU_ID,
+                    Rez.Strings.menu_item_lock,
+                    "",
+                    MENU_ID_LOCK,
                     {}
                 ));
+
+        addItem(new MenuItem(
+                    Rez.Strings.menu_item_unlock,
+                    "",
+                    MENU_ID_UNLOCK,
+                    {}
+                ));
+        addItem(new MenuItem(
+                    Rez.Strings.menu_item_change_car,
+                    Rez.Strings.menu_description_on_phone,
+                    MENU_ID_ATHORIZE_CAR,
+                    {}
+                ));
+        setTitle(vehicle[$.MAKE_FIELD] + " " + vehicle[$.MODEL_FIELD]);
     }
 
+    // Show menu item with log in prompt
     function displayInitialMenu() {
-        mNumberOfVehiclesInMenu = 0;
         mTokenIsFresh = true;
+
+        mNumberOfItemsInMenu = 1;
         addItem(new MenuItem(
-            "Add car",
-            "on phone",
-            ADD_CARS_MENU_ID,
+            Rez.Strings.menu_item_log_in,
+            Rez.Strings.menu_description_on_phone,
+            MENU_ID_ATHORIZE_CAR,
             {}
         ));
+        setTitle("Keyfob");
     }
 
     function clearMenu() {
-        for (var i=0; i<mNumberOfVehiclesInMenu+1; i++) {
+        for (var i=0; i<mNumberOfItemsInMenu; i++) {
             deleteItem(0);
         }
     }
@@ -102,7 +115,7 @@ class VehiclesMenu extends WatchUi.Menu2 {
         //TODO support error messages
         if (vehicle != null) {
             clearMenu();
-            displayVehicleInMenu(vehicle);
+            displayVehicleMenu(vehicle);
         }
         hideProgress();
     }
@@ -124,22 +137,17 @@ class VehiclesMenu extends WatchUi.Menu2 {
         hideProgress();
     }
 
-    function displayVehicleControls(vehicle) {
-        var lockMenu = new Rez.Menus.LockMenu();
-        lockMenu.setTitle(vehicle[$.MAKE_FIELD]+" "+vehicle[$.MODEL_FIELD]);
-        WatchUi.pushView(lockMenu, new LockMenuDelegate(vehicle[$.ID_FIELD], method(:onLockUnlockMenuSelected)),
-                WatchUi.SLIDE_IMMEDIATE);
-    }
-
     function onLockUnlockMenuSelected(vehicleId, action) {
         showProgress(action == Lock ? "Locking" : "Unlocking");
+
+        var vehicle = mCarApi.getCachedVehicle();
+        var vehicleId = vehicle[$.ID_FIELD];
         mCarApi.lockUnlock(vehicleId, action, method(:onLockFinishes));
     }
 
     function onLockFinishes(result) {
         //TODO support errors
         hideProgress();
-        WatchUi.popView(WatchUi.SLIDE_IMMEDIATE); // close menu
     }
 }
 
@@ -152,12 +160,14 @@ class VehiclesMenuDelegate extends WatchUi.Menu2InputDelegate {
     }
 
     function onSelect(menuItem) {
-        System.println(menuItem.getLabel());
+        System.println("Menu click: " + menuItem.getLabel());
 
-        if (menuItem.getId() == ADD_CARS_MENU_ID) {
+        if (menuItem.getId() == MENU_ID_ATHORIZE_CAR) {
             mView.authenticateOAuth();
-        } else {
-            mView.displayVehicleControls(menuItem.getId());
+        } else if (menuItem.getId() == MENU_ID_LOCK) {
+            mView.onLockUnlockMenuSelected(null, Lock);
+        } else if (menuItem.getId() == MENU_ID_UNLOCK) {
+            mView.onLockUnlockMenuSelected(null, Unlock);
         }
         return true;
     }
