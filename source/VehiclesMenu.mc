@@ -48,7 +48,13 @@ class VehiclesMenu extends WatchUi.Menu2 {
                     MENU_ID_ATHORIZE_CAR,
                     {}
                 ));
-        setTitle(vehicle[$.MAKE_FIELD] + " " + vehicle[$.MODEL_FIELD]);
+        var manufacturer = vehicle[$.MAKE_FIELD];
+        var model = vehicle[$.MODEL_FIELD];
+        if ((manufacturer + model).length() < 10) {
+            setTitle(manufacturer + " " + model);
+        } else {
+            setTitle(model);
+        }
     }
 
     // Show menu item with log in prompt
