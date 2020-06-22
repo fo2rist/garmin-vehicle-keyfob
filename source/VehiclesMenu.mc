@@ -62,7 +62,7 @@ class VehiclesMenu extends WatchUi.Menu2 {
             MENU_ID_ATHORIZE_CAR,
             {}
         ));
-        setTitle("Keyfob");
+        setTitle(Rez.Strings.title);
     }
 
     function clearMenu() {
@@ -76,7 +76,8 @@ class VehiclesMenu extends WatchUi.Menu2 {
             updateProgress(message);
             return;
         }
-        mProgressBar = new WatchUi.ProgressBar(message, null);
+
+        mProgressBar = new WatchUi.ProgressBar(stringify(message), null);
         WatchUi.pushView(mProgressBar, new ProgressBarDelegate(method(:onProgressDismissed)), WatchUi.SLIDE_DOWN);
     }
 
@@ -89,7 +90,7 @@ class VehiclesMenu extends WatchUi.Menu2 {
     }
 
     function updateProgress(message) {
-        mProgressBar.setDisplayString(message);
+        mProgressBar.setDisplayString(stringify(message));
     }
 
     function onProgressDismissed() {
@@ -97,13 +98,13 @@ class VehiclesMenu extends WatchUi.Menu2 {
     }
 
     function authenticateOAuth() {
-        showProgress("Finish\nauthentication\non phone");
+        showProgress(Rez.Strings.message_finish_on_phone);
         mCarApi.authenticateOAuth(method(:onAuthenticated));
     }
 
     function onAuthenticated(token) {
         if (token != null) {
-            updateProgress("Loading\nvehicle info");
+            updateProgress(Rez.Strings.message_loading_info);
             mCarApi.fetchVehicleInfo(method(:onVehicleLoaded));
         } else {
             //TODO support error messages
@@ -128,7 +129,7 @@ class VehiclesMenu extends WatchUi.Menu2 {
     }
 
     private function refreshAuthToken() {
-        showProgress("Checking\naccess");
+        showProgress(Rez.Strings.message_checking_access);
         mCarApi.refreshToken(method(:onTokenRefreshed));
     }
 
@@ -138,7 +139,7 @@ class VehiclesMenu extends WatchUi.Menu2 {
     }
 
     function onLockUnlockMenuSelected(vehicleId, action) {
-        showProgress(action == Lock ? "Locking" : "Unlocking");
+        showProgress(action == Lock ? Rez.Strings.message_locking : Rez.Strings.message_unlocking);
 
         var vehicle = mCarApi.getCachedVehicle();
         var vehicleId = vehicle[$.ID_FIELD];

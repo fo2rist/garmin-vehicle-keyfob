@@ -1,5 +1,14 @@
 <resources>
-    <string id="AppName">Vehicle Keychain</string>
+    <string id="AppName">Vehicle Keycfob</string>
+    
+    <string id="title">Keyfob</string>
+    
+    <string id="message_finish_on_phone">Finish\nauthentication\non phone</string>
+    <string id="message_loading_info">Loading\nvehicle info</string>
+    <string id="message_checking_access">Checking\naccess</string>
+    
+    <string id="message_locking">Locking</string>
+    <string id="message_unlocking">Unlocking</string>
     
     <string id="menu_item_log_in">Log in</string>
     <string id="menu_item_change_car">Change car</string>
