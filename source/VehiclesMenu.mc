@@ -31,14 +31,14 @@ class VehiclesMenu extends WatchUi.Menu2 {
         mNumberOfItemsInMenu = 3;
         addItem(new MenuItem(
                     Rez.Strings.menu_item_lock,
-                    "",
+                    null,
                     MENU_ID_LOCK,
                     {}
                 ));
 
         addItem(new MenuItem(
                     Rez.Strings.menu_item_unlock,
-                    "",
+                    null,
                     MENU_ID_UNLOCK,
                     {}
                 ));
